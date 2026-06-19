@@ -13,9 +13,11 @@
     --border-heavy: #636363;
     --text:         #f2ece2;
     --text-muted:   #9a9088;
-    --orange:       #f07200;
-    --orange-dark:  #a84e00;
-    --orange-dim:   rgba(240, 114, 0, 0.14);
+    --green:        #00693E;
+    --green-dark:   #004D2C;
+    --green-dim:    rgba(0, 105, 62, 0.16);
+    --orange:       #F47920;
+    --orange-dark:  #B85500;
     --danger:       #cc4444;
     --radius:       3px;
     --font:         'Segoe UI', system-ui, sans-serif;
@@ -44,11 +46,20 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 10px 16px;
+    padding: 14px 20px;
     background: var(--surface);
-    border-bottom: 3px solid var(--orange);
+    border-bottom: none;
     flex-shrink: 0;
     flex-wrap: wrap;
+    position: relative;
+}
+
+.app-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--green) 0%, var(--orange) 100%);
 }
 
 .app-title {
@@ -71,7 +82,7 @@ body {
 }
 
 .mode-btn {
-    padding: 8px 18px;
+    padding: 10px 22px;
     border: none;
     border-right: 2px solid var(--border-heavy);
     background: transparent;
@@ -88,7 +99,7 @@ body {
 .mode-btn:last-child { border-right: none; }
 
 .mode-btn.active {
-    background: var(--orange);
+    background: var(--green);
     color: #fff;
 }
 
@@ -117,7 +128,7 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.09em;
-    color: var(--orange);
+    color: var(--green);
     white-space: nowrap;
 }
 
@@ -136,7 +147,7 @@ body {
 }
 
 .meta-field input:focus {
-    border-color: var(--orange);
+    border-color: var(--green);
     background: var(--surface-alt);
 }
 
@@ -157,7 +168,7 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--orange);
+    color: var(--green);
     white-space: nowrap;
 }
 
@@ -201,7 +212,7 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--orange);
+    color: var(--green);
 }
 
 .info-value {
@@ -278,7 +289,7 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: var(--orange);
+    color: var(--green);
     border-bottom: 2px solid var(--border);
     flex-shrink: 0;
     background: var(--surface-alt);
@@ -300,11 +311,16 @@ body {
     transition: background 0.1s;
 }
 
-.note-item:hover { background: var(--surface-alt); }
+.note-item:hover {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--orange);
+    padding-left: 13px;
+}
 
 .note-item.active {
-    background: var(--orange-dim);
-    border-left: 3px solid var(--orange);
+    background: var(--green-dim);
+    border-left: 3px solid var(--green);
+    padding-left: 13px;
 }
 
 .note-item-title {
@@ -376,14 +392,14 @@ body {
 }
 
 .btn-primary {
-    background: var(--orange);
-    border-color: var(--orange-dark);
-    border-bottom-color: #5a2a00;
+    background: var(--green);
+    border-color: var(--green-dark);
+    border-bottom-color: #001f12;
     color: #fff;
 }
 
-.btn-primary:hover { background: #d86600; }
-.btn-primary:active { border-bottom-color: var(--orange-dark); }
+.btn-primary:hover { background: #005533; }
+.btn-primary:active { border-bottom-color: var(--green-dark); }
 
 .btn-secondary {
     background: transparent;
@@ -396,6 +412,16 @@ body {
     color: var(--text);
     background: var(--surface-alt);
 }
+
+.btn-orange {
+    background: var(--orange);
+    border-color: var(--orange-dark);
+    border-bottom-color: #5a2800;
+    color: #fff;
+}
+
+.btn-orange:hover { background: #e06a10; }
+.btn-orange:active { border-bottom-color: var(--orange-dark); }
 
 /* State: timer is actively running */
 .btn-running {
@@ -428,7 +454,7 @@ body {
 .modal {
     background: var(--surface);
     border: 2px solid var(--border-heavy);
-    border-top: 4px solid var(--orange);
+    border-top: 4px solid var(--green);
     border-radius: var(--radius);
     width: min(720px, 90vw);
     max-height: 80vh;
@@ -453,7 +479,7 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: var(--orange);
+    color: var(--green);
 }
 
 .modal-close {

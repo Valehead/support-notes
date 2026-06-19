@@ -35,8 +35,18 @@ const elPreview        = document.getElementById('markdown-preview');
 // ── Mode toggle ────────────────────────────────────────────────────────────
 
 const modeLabels = {
-    support: { location: 'Location / Client', contact: 'Contact' },
-    qa:      { location: 'Application',       contact: 'Version / Branch' },
+    support: {
+        location:   'Location / Client',
+        contact:    'Contact',
+        locationPh: 'e.g. Springfield',
+        contactPh:  'optional',
+    },
+    qa: {
+        location:   'Application',
+        contact:    'Version / Branch',
+        locationPh: 'e.g. Dashboard, Login screen',
+        contactPh:  'e.g. v2.1 / build 447',
+    },
 };
 
 elMode.forEach(btn => {
@@ -51,6 +61,8 @@ function applyModeLabels() {
     const labels = modeLabels[state.mode];
     elLabelLoc.textContent     = labels.location;
     elLabelContact.textContent = labels.contact;
+    elLocation.placeholder     = labels.locationPh;
+    elContact.placeholder      = labels.contactPh;
 }
 
 // ── Timer ──────────────────────────────────────────────────────────────────

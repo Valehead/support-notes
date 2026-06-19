@@ -32,7 +32,7 @@ $notes = $repo->findAll();
             <input type="text" id="contact-name" placeholder="optional" autocomplete="off">
         </label>
         <div class="header-actions">
-            <button class="btn" id="btn-new">New Note</button>
+            <button class="btn btn-orange" id="btn-new">New Note</button>
             <button class="btn btn-primary" id="btn-save">Save</button>
             <button class="btn btn-secondary" id="btn-export">Export</button>
             <span class="save-status" id="save-status"></span>
