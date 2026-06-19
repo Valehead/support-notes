@@ -4,6 +4,19 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 
+/**
+ * NoteRepository — sole DB access point for the notes table.
+ *
+ * The SQLite connection and schema creation live in db.php (getDb()).
+ * Nothing outside this class should query the database directly.
+ *
+ * Schema (auto-created by getDb() if absent):
+ *   id, mode, client_location, contact_name, content, call_started_at,
+ *   created_at, updated_at
+ *
+ * Modes: 'support' (default) | 'qa' — controls labels in the UI and the
+ * heading in exported Markdown. Unknown values are coerced to 'support'.
+ */
 class NoteRepository
 {
     private PDO $db;
@@ -44,6 +57,9 @@ class NoteRepository
 
     private const VALID_MODES = ['support', 'qa'];
 
+    // Coerces any unrecognised mode to 'support'. Mode drives the export
+    // document heading and the UI field labels, so an unexpected value
+    // would silently corrupt both.
     private function sanitizeMode(mixed $mode): string
     {
         return in_array($mode, self::VALID_MODES, strict: true) ? $mode : 'support';
@@ -101,38 +117,5 @@ class NoteRepository
     {
         $stmt = $this->db->prepare('DELETE FROM notes WHERE id = ?');
         return $stmt->execute([$id]);
-    }
-
-    public function exportMarkdown(array $noteIds = []): string
-    {
-        $notes = empty($noteIds) ? $this->findAll() : $this->findByIds($noteIds);
-
-        if (empty($notes)) {
-            return '';
-        }
-
-        $date  = (new DateTimeImmutable())->format('F j, Y');
-        $title = $notes[0]['mode'] === 'qa' ? '# QA Session Notes' : '# Support Call Notes';
-
-        $lines = [$title, "**Date:** {$date}", ''];
-
-        foreach ($notes as $note) {
-            $heading = $note['client_location'] ?: 'Unnamed';
-            if (!empty($note['contact_name'])) {
-                $heading .= " — {$note['contact_name']}";
-            }
-
-            $lines[] = '---';
-            $lines[] = '';
-            $lines[] = "## {$heading}";
-            if (!empty($note['call_started_at'])) {
-                $lines[] = "**Call Started:** {$note['call_started_at']}";
-            }
-            $lines[] = '';
-            $lines[] = trim($note['content']);
-            $lines[] = '';
-        }
-
-        return implode("\n", $lines);
     }
 }

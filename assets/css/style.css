@@ -1,3 +1,16 @@
+/*
+ * style.css — support-notes UI
+ *
+ * Design tokens live in :root below. Adjust colours, radii, and type there;
+ * don't set raw values inline elsewhere in the file.
+ *
+ * Surface depth scale (darkest to lightest):
+ *   --bg  →  --surface  →  --surface-alt  →  --surface-hi
+ *
+ * Button "pressed" effect: border-bottom shrinks from 4px to 2px on :active
+ * combined with translateY(2px) — no JS involved, pure CSS.
+ */
+
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -170,6 +183,18 @@ body {
     letter-spacing: 0.1em;
     color: var(--green);
     white-space: nowrap;
+    opacity: 0;
+}
+
+.save-status-pop {
+    animation: status-fade 1.8s ease forwards;
+}
+
+@keyframes status-fade {
+    0%   { opacity: 0; transform: translateY(3px); }
+    12%  { opacity: 1; transform: translateY(0);   }
+    75%  { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 /* ── Workspace ── */
@@ -341,6 +366,14 @@ body {
     font-family: var(--mono);
 }
 
+.note-item-call {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--orange);
+    margin-top: 2px;
+    font-family: var(--mono);
+}
+
 .note-delete {
     position: absolute;
     top: 10px;
@@ -435,6 +468,28 @@ body {
 @keyframes pulse-border {
     0%, 100% { border-color: #8a3e00; }
     50%       { border-color: var(--orange); }
+}
+
+/* State: save in flight */
+.btn-saving {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* State: save just completed */
+.btn-saved {
+    background: #00a855 !important;
+    border-color: var(--green-dark) !important;
+    color: #fff !important;
+    transition: background 0.2s;
+}
+
+/* Disabled state (no active note) */
+.btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* ── Export modal ── */

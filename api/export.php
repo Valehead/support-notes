@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/NoteRepository.php';
+require_once __DIR__ . '/../includes/MarkdownExporter.php';
 
-$repo = new NoteRepository();
+$repo     = new NoteRepository();
+$exporter = new MarkdownExporter();
 
 $ids = [];
 if (!empty($_GET['ids'])) {
@@ -12,7 +14,8 @@ if (!empty($_GET['ids'])) {
     $ids = array_filter($ids, fn(int $id) => $id > 0);
 }
 
-$markdown = $repo->exportMarkdown(array_values($ids));
+$notes    = empty($ids) ? $repo->findAll() : $repo->findByIds(array_values($ids));
+$markdown = $exporter->export($notes);
 
 if (isset($_GET['download'])) {
     $filename = 'notes-' . date('Y-m-d') . '.md';
