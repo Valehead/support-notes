@@ -73,8 +73,11 @@ $notes = $repo->findAll();
         <ul class="note-list" id="note-list">
             <?php foreach ($notes as $note): ?>
             <li class="note-item" data-id="<?= (int) $note['id'] ?>" data-mode="<?= $note['mode'] ?>">
-                <span class="note-item-title"><?= $note['client_location'] ?: 'Untitled' ?></span>
-                <span class="note-item-meta"><?= $note['call_started_at'] ?? '' ?></span>
+                <span class="note-item-title"><?= htmlspecialchars($note['client_location'] ?: 'Untitled') ?></span>
+                <span class="note-item-meta" data-created="<?= htmlspecialchars($note['created_at']) ?>"></span>
+                <?php if (!empty($note['call_started_at'])): ?>
+                <span class="note-item-call">Call: <?= htmlspecialchars($note['call_started_at']) ?></span>
+                <?php endif; ?>
                 <button class="note-delete" data-id="<?= (int) $note['id'] ?>" title="Delete">×</button>
             </li>
             <?php endforeach; ?>

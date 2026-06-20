@@ -1,15 +1,34 @@
 'use strict';
 
+// app.js — client-side controller for support-notes.
+//
+// Architecture overview:
+//   PHP (index.php) renders the page shell and seeds the sidebar with any
+//   existing notes from the DB. After that, all interaction is handled here.
+//   The right-side note list, the timer, and the editor are
+//   all kept in sync with the `state` object below.
+//
+// Data flow:
+//   User action → update `state` → call api() → update DOM
+//
+// Auto-save:
+//   Content changes debounce at 1500 ms; location/contact fields at 800 ms.
+//   Both share `state.saveHandle` so typing in any field resets the single
+//   pending timer. saveNow() is also called explicitly before New Note and
+//   when the Save button is clicked.
+
 // ── State ──────────────────────────────────────────────────────────────────
 
+// Single source of truth for session state. Timer fields are wall-clock Dates,
+// not offsets — elapsed is computed fresh on each tick from timerStart.
 const state = {
-    activeId:      null,
+    activeId:      null,   // id of the note currently open in the editor
     mode:          'support',
     isRunning:     false,
-    callStartedAt: null,   // Date when START was pressed (wall clock reference)
-    timerStart:    null,   // Same — used for elapsed calculation
-    timerHandle:   null,
-    saveHandle:    null,
+    callStartedAt: null,   // Date when Start was pressed; stored to the DB as a formatted string
+    timerStart:    null,   // Same Date — kept separate in case pause/resume ever needs them to diverge
+    timerHandle:   null,   // setInterval handle for the elapsed ticker
+    saveHandle:    null,   // setTimeout handle for the debounced auto-save
 };
 
 // ── Element refs ───────────────────────────────────────────────────────────
@@ -106,8 +125,8 @@ function resetTimer() {
     state.timerStart    = null;
     state.callStartedAt = null;
 
-    elCallStarted.textContent = '—';
-    elElapsed.textContent     = '—';
+    elCallStarted.textContent  = '—';
+    elElapsed.textContent      = '—';
     elBtnStartStop.textContent = 'Start';
     elBtnStartStop.classList.add('btn-primary');
     elBtnStartStop.classList.remove('btn-running');
@@ -128,22 +147,28 @@ function fmtTime(date) {
 // ── New note ───────────────────────────────────────────────────────────────
 
 elBtnNew.addEventListener('click', async () => {
-    // Start the timer automatically if it hasn't been started yet
-    if (!state.isRunning && !state.callStartedAt) {
-        startTimer();
-    }
+    // Flush any pending debounced save, then commit current note before resetting
+    clearTimeout(state.saveHandle);
+    if (state.activeId !== null) await saveNow();
 
-    const callStartedAt = state.callStartedAt ? fmtTime(state.callStartedAt) : null;
+    // Full reset so the next call starts clean
+    resetTimer();
+    elLocation.value = '';
+    elContact.value  = '';
+    elContent.value  = '';
+
+    startTimer();
 
     const note = await api('POST', '/api/notes.php', {
         mode:            state.mode,
-        client_location: elLocation.value.trim(),
-        contact_name:    elContact.value.trim() || null,
+        client_location: '',
+        contact_name:    null,
         content:         '',
-        call_started_at: callStartedAt,
+        call_started_at: fmtTime(state.callStartedAt),
     });
 
-    loadNote(note);
+    state.activeId = note.id;
+    setSaveEnabled(true);
     prependSidebarItem(note);
     setActive(note.id);
     elContent.focus();
@@ -155,38 +180,90 @@ elBtnSave.addEventListener('click', saveNow);
 
 elContent.addEventListener('input', () => {
     clearTimeout(state.saveHandle);
-    elSaveStatus.textContent = '';
+    syncSaveButton();
     state.saveHandle = setTimeout(saveNow, 1500);
 });
 
 [elLocation, elContact].forEach(el => {
     el.addEventListener('input', () => {
         clearTimeout(state.saveHandle);
+        syncSaveButton();
         state.saveHandle = setTimeout(saveNow, 800);
     });
 });
 
 async function saveNow() {
-    if (state.activeId === null) return;
+    const location = elLocation.value.trim();
+    const content  = elContent.value.trim();
+    const callTime = state.callStartedAt ? fmtTime(state.callStartedAt) : null;
+
+    if (state.activeId === null) {
+        // No note record yet — create one on first save rather than dropping the data.
+        if (!location && !content) return;
+
+        elBtnSave.classList.add('btn-saving');
+        const note = await api('POST', '/api/notes.php', {
+            mode:            state.mode,
+            client_location: location,
+            contact_name:    elContact.value.trim() || null,
+            content:         elContent.value,
+            call_started_at: callTime,
+        });
+        state.activeId = note.id;
+        prependSidebarItem(note);
+        setActive(note.id);
+        elBtnSave.classList.remove('btn-saving');
+        flashSaved();
+        return;
+    }
+
+    elBtnSave.classList.add('btn-saving');
 
     await api('PUT', `/api/notes.php?id=${state.activeId}`, {
         mode:            state.mode,
-        client_location: elLocation.value.trim(),
+        client_location: location,
         contact_name:    elContact.value.trim() || null,
         content:         elContent.value,
-        call_started_at: state.callStartedAt ? fmtTime(state.callStartedAt) : null,
+        call_started_at: callTime,
     });
 
-    updateSidebarItem(state.activeId, elLocation.value.trim() || 'Untitled');
-    flash('Saved');
+    updateSidebarItem(state.activeId, location || 'Untitled', callTime ?? undefined);
+    elBtnSave.classList.remove('btn-saving');
+    flashSaved();
 }
 
-function flash(msg) {
-    elSaveStatus.textContent = msg;
-    setTimeout(() => { elSaveStatus.textContent = ''; }, 2000);
+function flashSaved() {
+    elBtnSave.classList.add('btn-saved');
+    elSaveStatus.textContent = 'Saved';
+    elSaveStatus.classList.add('save-status-pop');
+    setTimeout(() => {
+        elBtnSave.classList.remove('btn-saved');
+        elSaveStatus.textContent = '';
+        elSaveStatus.classList.remove('save-status-pop');
+    }, 1800);
+}
+
+// ── Save button enabled state ──────────────────────────────────────────────
+// Save is enabled as soon as any field has content (even before a note record
+// exists). On first save with no activeId, saveNow() auto-creates the record.
+// Explicit overrides (loadNote, deleteNote) still call setSaveEnabled directly.
+
+function syncSaveButton() {
+    const hasContent = elLocation.value.trim() || elContact.value.trim() || elContent.value.trim();
+    elBtnSave.disabled = !(hasContent || state.activeId !== null);
+}
+
+function setSaveEnabled(enabled) {
+    elBtnSave.disabled = !enabled;
 }
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
+// Populated two ways:
+//   1. PHP renders existing notes on page load (index.php).
+//   2. JS prepends new notes via prependSidebarItem() when New Note is clicked.
+// loadNote() switches to an existing note and does NOT add a sidebar item.
+// The New Note handler sets state.activeId directly and skips loadNote()
+// because the editor fields start empty for a brand-new note.
 
 elNoteList.addEventListener('click', e => {
     const deleteBtn = e.target.closest('.note-delete');
@@ -217,6 +294,8 @@ function loadNote(note) {
     elContact.value  = note.contact_name    ?? '';
     elContent.value  = note.content         ?? '';
 
+    setSaveEnabled(true);
+
     // Timer display is session state — loading a note does not touch it
 }
 
@@ -235,17 +314,44 @@ function buildSidebarItem(note) {
     li.className  = 'note-item';
     li.dataset.id = note.id;
 
+    const callHtml = note.call_started_at
+        ? `<span class="note-item-call">Call: ${esc(note.call_started_at)}</span>`
+        : '';
+
     li.innerHTML = `
         <span class="note-item-title">${esc(note.client_location || 'Untitled')}</span>
-        <span class="note-item-meta">${esc(note.call_started_at || '')}</span>
+        <span class="note-item-meta">${esc(fmtCreatedAt(note.created_at))}</span>
+        ${callHtml}
         <button class="note-delete" data-id="${note.id}" title="Delete">×</button>
     `;
     return li;
 }
 
-function updateSidebarItem(id, title) {
-    const el = elNoteList.querySelector(`.note-item[data-id="${id}"] .note-item-title`);
-    if (el) el.textContent = title;
+function updateSidebarItem(id, title, callTime) {
+    const item = elNoteList.querySelector(`.note-item[data-id="${id}"]`);
+    if (!item) return;
+    const titleEl = item.querySelector('.note-item-title');
+    if (titleEl) titleEl.textContent = title;
+    if (callTime !== undefined) {
+        let callEl = item.querySelector('.note-item-call');
+        if (!callEl) {
+            callEl = document.createElement('span');
+            callEl.className = 'note-item-call';
+            item.querySelector('.note-delete').before(callEl);
+        }
+        callEl.textContent = 'Call: ' + callTime;
+    }
+}
+
+// Formats the DB-stored "YYYY-MM-DD HH:MM:SS" timestamp for sidebar display.
+// Shows "Today, H:MM AM/PM" for notes created today; "Mon D, H:MM AM/PM" otherwise.
+function fmtCreatedAt(dbStr) {
+    if (!dbStr) return '';
+    const d     = new Date(dbStr.replace(' ', 'T') + 'Z');
+    const today = new Date();
+    const time  = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    if (d.toDateString() === today.toDateString()) return `Today, ${time}`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + time;
 }
 
 async function deleteNote(id) {
@@ -257,6 +363,7 @@ async function deleteNote(id) {
         elLocation.value = '';
         elContact.value  = '';
         elContent.value  = '';
+        setSaveEnabled(false);
     }
 }
 
@@ -292,3 +399,13 @@ function esc(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+setSaveEnabled(false);
+
+// Format the created_at timestamps on PHP-rendered sidebar items using the
+// same client-side formatter so timezone conversion is consistent everywhere.
+document.querySelectorAll('.note-item-meta[data-created]').forEach(el => {
+    el.textContent = fmtCreatedAt(el.dataset.created);
+});
