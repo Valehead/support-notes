@@ -9,22 +9,22 @@ Support and QA teams often rely on memory or scratch paper during calls and test
 ## Features
 
 - **Dual mode:** Support Call and QA Testing, each with context-appropriate field labels and placeholder text
-- **Independent stopwatch:** Start, stop, and reset the timer separately from note creation, with no forced flow
-- **Per-note sidebar:** Quickly switch between multiple active notes without losing your place; the timer keeps running regardless of which note is loaded
-- **Auto-save:** Notes save automatically as you type (debounced), with a manual Save button in the header
-- **Export:** Preview all notes as formatted markdown in-page, then download as a `.md` file
-- **Persistent storage:** Notes survive page refreshes via SQLite
+- **Call timer:** Start, stop, and reset independently from note creation. Timer state (running or paused at N seconds) is saved per note and restored when you switch back
+- **Per-note sidebar:** Switch between multiple notes without losing your place; the active note's timer auto-resumes on return
+- **Resting state:** Idle overlay on load — the workspace stays clean until you start a note
+- **Auto-save:** Notes save automatically as you type (debounced at 1.5 s for content, 800 ms for fields), with a manual Save button in the header
+- **Delete confirmation:** Single-click × on a note prompts before deleting
+- **Export:** Preview all notes as formatted markdown in-page, with human-readable timestamps and call duration; download as a `.md` file
 
-## Stack
+## Prerequisites
 
-- PHP 8.2 (no framework)
-- SQLite via PDO
-- Apache (Docker)
-- Vanilla JS + CSS
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — recommended, no other setup needed
+
+**Without Docker:** PHP 8.2+ with the `pdo_sqlite` extension enabled. The SQLite database file is created automatically; no database server is needed.
 
 ## Running locally
 
-Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+### Docker (recommended)
 
 ```bash
 git clone <repo-url>
@@ -32,9 +32,20 @@ cd support-notes
 docker compose up --build -d
 ```
 
+Open [http://localhost:8080](http://localhost:8080). To stop: `docker compose down`.
+
+### PHP built-in server
+
+```bash
+git clone <repo-url>
+cd support-notes
+cp .env.example .env          # optional — sets DB_PATH if you want a custom location
+php -S localhost:8080
+```
+
 Open [http://localhost:8080](http://localhost:8080).
 
-The SQLite database is created automatically on first run at `data/support_notes.db`. To stop the container: `docker compose down`.
+The SQLite database is created automatically at `data/support_notes.db` on first request.
 
 ## Project structure
 
@@ -43,20 +54,26 @@ support-notes/
 ├── index.php               Entry point and main dashboard view
 ├── api/
 │   ├── notes.php           REST CRUD for notes (GET/POST/PUT/DELETE)
-│   └── export.php          Markdown export (JSON or file download)
+│   └── export.php          Markdown export (JSON preview or file download)
 ├── includes/
-│   ├── db.php              PDO connection + schema initialization
-│   └── NoteRepository.php  All database access lives here
-├── data/                   SQLite database (gitignored, created at runtime)
-└── assets/
-    ├── css/style.css
-    └── js/app.js
+│   ├── db.php              PDO connection and schema initialization
+│   ├── NoteRepository.php  All database access
+│   └── MarkdownExporter.php  Converts note rows to a Markdown document
+├── assets/
+│   ├── css/style.css
+│   ├── img/
+│   │   └── mmp-grey.png
+│   └── js/
+│       ├── app.js          Entry point: event binding and init
+│       ├── api-client.js   fetch() wrapper and HTML-escape utility
+│       ├── session-state.js  Shared state object and workspace state helpers
+│       ├── call-timer.js   Timer start/stop/reset and paused-state restore
+│       ├── note-sidebar.js  Sidebar rendering and active-item tracking
+│       └── note-editor.js  Save, load, and delete note operations
+└── data/                   SQLite database (gitignored, created at runtime)
 ```
 
 ## Planned features
-
-### Core workflow
-- **Delete confirmation:** A note currently deletes on a single click of the x button. It should require a confirmation step to prevent accidents.
 
 ### UI / UX
 - **Tablet and split-monitor layout:** The three-column layout compresses poorly on smaller viewports. A responsive breakpoint with a collapsible drawer for the sidebar and left panel would make this usable on a tablet or in a half-screen window.
