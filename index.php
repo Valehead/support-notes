@@ -50,8 +50,12 @@ $notes = $repo->findAll();
                 <span class="info-value" id="call-started">—</span>
             </div>
             <div class="info-block">
-                <span class="info-label">Elapsed</span>
+                <span class="info-label">Time on Call</span>
                 <span class="info-value" id="elapsed">—</span>
+            </div>
+            <div class="info-block">
+                <span class="info-label">Last Saved</span>
+                <span class="info-value info-value--muted" id="last-saved">—</span>
             </div>
         </div>
         <div class="timer-controls">

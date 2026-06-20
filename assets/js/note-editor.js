@@ -2,13 +2,19 @@ import { api } from './api-client.js';
 import { state, enterRestingState, enterActiveState,
          setSaveEnabled, applyModeLabels } from './session-state.js';
 import { resetTimer, startTimer, restoreTimerPaused } from './call-timer.js';
-import { prependSidebarItem, updateSidebarItem, setActive } from './note-sidebar.js';
+import { prependSidebarItem, updateSidebarItem, setActive, fmtCreatedAt } from './note-sidebar.js';
+
+function setLastSaved(dbStr) {
+    document.getElementById('last-saved').textContent = dbStr ? fmtCreatedAt(dbStr) : '—';
+}
 
 export async function saveNow() {
     const location    = document.getElementById('client-location').value.trim();
     const content     = document.getElementById('note-content').value.trim();
     const callTime    = state.callStartedAt ? state.callStartedAt.toISOString() : null;
-    const callElapsed = state.isRunning ? null : (state.elapsedSeconds ?? null);
+    const callElapsed = state.isRunning && state.timerStart
+        ? Math.floor((Date.now() - state.timerStart.getTime()) / 1000)
+        : (state.elapsedSeconds ?? null);
     const elBtnSave   = document.getElementById('btn-save');
 
     if (state.activeId === null) {
@@ -22,10 +28,12 @@ export async function saveNow() {
             content:              document.getElementById('note-content').value,
             call_started_at:      callTime,
             call_elapsed_seconds: callElapsed,
+            call_timer_running:   state.isRunning ? 1 : 0,
         });
         state.activeId = note.id;
         prependSidebarItem(note);
         setActive(note.id);
+        setLastSaved(note.updated_at);
         elBtnSave.classList.remove('btn-saving');
         flashSaved();
         return;
@@ -33,16 +41,18 @@ export async function saveNow() {
 
     elBtnSave.classList.add('btn-saving');
 
-    await api('PUT', `/api/notes.php?id=${state.activeId}`, {
+    const saved = await api('PUT', `/api/notes.php?id=${state.activeId}`, {
         mode:                 state.mode,
         client_location:      location,
         contact_name:         document.getElementById('contact-name').value.trim() || null,
         content:              document.getElementById('note-content').value,
         call_started_at:      callTime,
         call_elapsed_seconds: callElapsed,
+        call_timer_running:   state.isRunning ? 1 : 0,
     });
 
     updateSidebarItem(state.activeId, location || 'Untitled', callTime ?? undefined);
+    setLastSaved(saved.updated_at);
     elBtnSave.classList.remove('btn-saving');
     flashSaved();
 }
@@ -75,6 +85,7 @@ export function loadNote(note) {
 
     enterActiveState();
     setSaveEnabled(true);
+    setLastSaved(note.updated_at);
 
     if (note.call_started_at) {
         const restored = new Date(note.call_started_at);
@@ -83,6 +94,7 @@ export function loadNote(note) {
                 const elapsed = parseInt(note.call_elapsed_seconds, 10);
                 if (!isNaN(elapsed)) {
                     restoreTimerPaused(restored, elapsed);
+                    if (note.call_timer_running) startTimer();
                 }
             } else {
                 startTimer(restored);

@@ -78,6 +78,7 @@ function parseNoteBody(array $raw): array
         'call_elapsed_seconds' => isset($raw['call_elapsed_seconds']) && $raw['call_elapsed_seconds'] !== null
                                      ? (int) $raw['call_elapsed_seconds']
                                      : null,
+        'call_timer_running'   => !empty($raw['call_timer_running']) ? 1 : 0,
     ];
 }
 

@@ -38,6 +38,7 @@ export function enterRestingState() {
     ws.classList.add('workspace--resting');
     state.activeId = null;
     setSaveEnabled(false);
+    document.getElementById('last-saved').textContent = '—';
 }
 
 export function enterActiveState() {
