@@ -1,10 +1,10 @@
 # support-notes
 
-A note-taking dashboard for support specialists and QA testers. Built for situations where you need to capture structured notes in real time during a call or session, then export clean markdown to paste into a CRM, issue tracker, or ticket.
+A note-taking dashboard for support specialists and QA testers. Built to stand alongside a CRM, ticket system, or issue tracker as its own workspace — capture structured notes in real time during a call or testing session, then hand off however you like.
 
 ## The problem it solves
 
-Support and QA teams often rely on memory or scratch paper during calls and testing sessions, then reconstruct notes hours later and lose detail in the process. This app gives you a persistent, session-aware workspace: start the stopwatch when the call begins, type freely, and export when you're done.
+Support and QA teams often rely on memory or scratch paper during calls and testing sessions, then reconstruct notes hours later and lose detail in the process. This app gives you a persistent, structured workspace that runs alongside whatever else is on your screen. Start the timer when the call begins, type freely, switch between notes without losing your place. Export to markdown when you're done — or don't. The value is in the session, not the handoff.
 
 ## Features
 
@@ -57,7 +57,6 @@ support-notes/
 
 ### Core workflow
 - **Delete confirmation:** A note currently deletes on a single click of the x button. It should require a confirmation step to prevent accidents.
-- **Timer persistence:** The stopwatch resets on page refresh because it lives in JS session state. Persisting the start timestamp (via `localStorage` or a session endpoint) would let it survive accidental refreshes.
 
 ### UI / UX
 - **Tablet and split-monitor layout:** The three-column layout compresses poorly on smaller viewports. A responsive breakpoint with a collapsible drawer for the sidebar and left panel would make this usable on a tablet or in a half-screen window.
