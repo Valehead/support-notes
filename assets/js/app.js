@@ -73,6 +73,10 @@ elMode.forEach(btn => {
         state.mode = btn.dataset.mode;
         elMode.forEach(b => b.classList.toggle('active', b === btn));
         applyModeLabels();
+        if (state.activeId !== null) {
+            clearTimeout(state.saveHandle);
+            state.saveHandle = setTimeout(saveNow, 300);
+        }
     });
 });
 
@@ -90,7 +94,12 @@ elBtnStartStop.addEventListener('click', () => {
     state.isRunning ? stopTimer() : startTimer();
 });
 
-elBtnReset.addEventListener('click', resetTimer);
+elBtnReset.addEventListener('click', () => {
+    if (state.activeId !== null && state.callStartedAt !== null) {
+        if (!confirm('Reset timer? The saved call start time for this note will be cleared.')) return;
+    }
+    resetTimer();
+});
 
 function startTimer() {
     if (state.isRunning) return;
@@ -149,6 +158,7 @@ function fmtTime(date) {
 // ── New note ───────────────────────────────────────────────────────────────
 
 elBtnNew.addEventListener('click', async () => {
+    elBtnNew.disabled = true;
     // Flush any pending debounced save, then commit current note before resetting
     clearTimeout(state.saveHandle);
     if (state.activeId !== null) await saveNow();
@@ -162,24 +172,31 @@ elBtnNew.addEventListener('click', async () => {
     startTimer();
     enterActiveState();
 
-    const note = await api('POST', '/api/notes.php', {
-        mode:            state.mode,
-        client_location: '',
-        contact_name:    null,
-        content:         '',
-        call_started_at: fmtTime(state.callStartedAt),
-    });
+    try {
+        const note = await api('POST', '/api/notes.php', {
+            mode:            state.mode,
+            client_location: '',
+            contact_name:    null,
+            content:         '',
+            call_started_at: fmtTime(state.callStartedAt),
+        });
 
-    state.activeId = note.id;
-    setSaveEnabled(true);
-    prependSidebarItem(note);
-    setActive(note.id);
-    elContent.focus();
+        state.activeId = note.id;
+        setSaveEnabled(true);
+        prependSidebarItem(note);
+        setActive(note.id);
+        elContent.focus();
+    } finally {
+        elBtnNew.disabled = false;
+    }
 });
 
 // ── Save ───────────────────────────────────────────────────────────────────
 
-elBtnSave.addEventListener('click', saveNow);
+elBtnSave.addEventListener('click', () => {
+    clearTimeout(state.saveHandle);
+    saveNow();
+});
 
 elContent.addEventListener('input', () => {
     clearTimeout(state.saveHandle);
@@ -309,6 +326,8 @@ elNoteList.addEventListener('click', async e => {
         return;
     }
 
+    clearTimeout(state.saveHandle);
+    if (state.activeId !== null) await saveNow();
     loadNoteById(id);
 });
 
@@ -391,6 +410,7 @@ function fmtCreatedAt(dbStr) {
 }
 
 async function deleteNote(id) {
+    if (!confirm('Delete this note? This cannot be undone.')) return;
     await api('DELETE', `/api/notes.php?id=${id}`);
     document.querySelector(`.note-item[data-id="${id}"]`)?.remove();
 
@@ -405,6 +425,8 @@ async function deleteNote(id) {
 // ── Export modal ───────────────────────────────────────────────────────────
 
 elBtnExport.addEventListener('click', async () => {
+    clearTimeout(state.saveHandle);
+    if (state.activeId !== null) await saveNow();
     const { markdown } = await api('GET', '/api/export.php');
     elPreview.textContent = markdown || '(no notes to export)';
     document.getElementById('btn-download').href = '/api/export.php?download=1';
