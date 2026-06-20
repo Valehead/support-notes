@@ -12,7 +12,7 @@ require_once __DIR__ . '/db.php';
  *
  * Schema (auto-created by getDb() if absent):
  *   id, mode, client_location, contact_name, content, call_started_at,
- *   created_at, updated_at
+ *   call_elapsed_seconds, call_timer_running, created_at, updated_at
  *
  * Modes: 'support' (default) | 'qa' — controls labels in the UI and the
  * heading in exported Markdown. Unknown values are coerced to 'support'.
@@ -70,18 +70,20 @@ class NoteRepository
         $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
 
         $stmt = $this->db->prepare('
-            INSERT INTO notes (mode, client_location, contact_name, content, call_started_at, created_at, updated_at)
-            VALUES (:mode, :client_location, :contact_name, :content, :call_started_at, :created_at, :updated_at)
+            INSERT INTO notes (mode, client_location, contact_name, content, call_started_at, call_elapsed_seconds, call_timer_running, created_at, updated_at)
+            VALUES (:mode, :client_location, :contact_name, :content, :call_started_at, :call_elapsed_seconds, :call_timer_running, :created_at, :updated_at)
         ');
 
         $stmt->execute([
-            ':mode'            => $this->sanitizeMode($fields['mode'] ?? null),
-            ':client_location' => $fields['client_location'] ?? '',
-            ':contact_name'    => $fields['contact_name']    ?? null,
-            ':content'         => $fields['content']         ?? '',
-            ':call_started_at' => $fields['call_started_at'] ?? null,
-            ':created_at'      => $now,
-            ':updated_at'      => $now,
+            ':mode'                 => $this->sanitizeMode($fields['mode'] ?? null),
+            ':client_location'      => $fields['client_location'] ?? '',
+            ':contact_name'         => $fields['contact_name']    ?? null,
+            ':content'              => $fields['content']         ?? '',
+            ':call_started_at'      => $fields['call_started_at']      ?? null,
+            ':call_elapsed_seconds' => $fields['call_elapsed_seconds'] ?? null,
+            ':call_timer_running'   => $fields['call_timer_running']   ?? 0,
+            ':created_at'           => $now,
+            ':updated_at'           => $now,
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -93,23 +95,27 @@ class NoteRepository
 
         $stmt = $this->db->prepare('
             UPDATE notes
-            SET mode            = :mode,
-                client_location = :client_location,
-                contact_name    = :contact_name,
-                content         = :content,
-                call_started_at = :call_started_at,
-                updated_at      = :updated_at
+            SET mode                 = :mode,
+                client_location      = :client_location,
+                contact_name         = :contact_name,
+                content              = :content,
+                call_started_at      = :call_started_at,
+                call_elapsed_seconds = :call_elapsed_seconds,
+                call_timer_running   = :call_timer_running,
+                updated_at           = :updated_at
             WHERE id = :id
         ');
 
         return $stmt->execute([
-            ':id'              => $id,
-            ':mode'            => $this->sanitizeMode($fields['mode'] ?? null),
-            ':client_location' => $fields['client_location'] ?? '',
-            ':contact_name'    => $fields['contact_name']    ?? null,
-            ':content'         => $fields['content']         ?? '',
-            ':call_started_at' => $fields['call_started_at'] ?? null,
-            ':updated_at'      => $now,
+            ':id'                   => $id,
+            ':mode'                 => $this->sanitizeMode($fields['mode'] ?? null),
+            ':client_location'      => $fields['client_location'] ?? '',
+            ':contact_name'         => $fields['contact_name']    ?? null,
+            ':content'              => $fields['content']         ?? '',
+            ':call_started_at'      => $fields['call_started_at']      ?? null,
+            ':call_elapsed_seconds' => $fields['call_elapsed_seconds'] ?? null,
+            ':call_timer_running'   => $fields['call_timer_running']   ?? 0,
+            ':updated_at'           => $now,
         ]);
     }
 
