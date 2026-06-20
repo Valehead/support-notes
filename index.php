@@ -61,6 +61,10 @@ $notes = $repo->findAll();
     </aside>
 
     <main class="panel-center">
+        <div id="editor-idle" class="editor-idle">
+            <span class="editor-idle-title">support-notes</span>
+            <p class="editor-idle-hint">Click <strong>NEW NOTE</strong> to begin, or select a saved note from the list.</p>
+        </div>
         <textarea
             id="note-content"
             placeholder="Start typing your notes here…"
