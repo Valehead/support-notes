@@ -63,22 +63,22 @@ function handlePut(NoteRepository $repo, ?int $id): void
 
 // Whitelists and casts the fields accepted from the client. Unknown keys in
 // the request body are discarded here rather than reaching the repository.
-function parseNoteBody(array $raw): array
+function parseNoteBody(array $body): array
 {
     return [
-        'mode'            => isset($raw['mode']) ? (string) $raw['mode'] : null,
-        'client_location' => isset($raw['client_location']) ? trim((string) $raw['client_location']) : '',
-        'contact_name'    => isset($raw['contact_name']) && $raw['contact_name'] !== null
-                                 ? trim((string) $raw['contact_name'])
+        'mode'            => isset($body['mode']) ? (string) $body['mode'] : null,
+        'client_location' => isset($body['client_location']) ? trim((string) $body['client_location']) : '',
+        'contact_name'    => isset($body['contact_name']) && $body['contact_name'] !== null
+                                 ? trim((string) $body['contact_name'])
                                  : null,
-        'content'         => isset($raw['content']) ? (string) $raw['content'] : '',
-        'call_started_at'      => isset($raw['call_started_at']) && $raw['call_started_at'] !== null
-                                     ? trim((string) $raw['call_started_at'])
+        'content'         => isset($body['content']) ? (string) $body['content'] : '',
+        'call_started_at'      => isset($body['call_started_at']) && $body['call_started_at'] !== null
+                                     ? trim((string) $body['call_started_at'])
                                      : null,
-        'call_elapsed_seconds' => isset($raw['call_elapsed_seconds']) && $raw['call_elapsed_seconds'] !== null
-                                     ? (int) $raw['call_elapsed_seconds']
+        'call_elapsed_seconds' => isset($body['call_elapsed_seconds']) && $body['call_elapsed_seconds'] !== null
+                                     ? (int) $body['call_elapsed_seconds']
                                      : null,
-        'call_timer_running'   => !empty($raw['call_timer_running']) ? 1 : 0,
+        'call_timer_running'   => !empty($body['call_timer_running']) ? 1 : 0,
     ];
 }
 

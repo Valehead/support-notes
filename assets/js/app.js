@@ -140,10 +140,10 @@ elNoteList.addEventListener('click', async e => {
 elBtnExport.addEventListener('click', async () => {
     clearTimeout(state.saveHandle);
     if (state.activeId !== null) await saveNow();
-    const tz = -new Date().getTimezoneOffset();
-    const { markdown } = await api('GET', `/api/export.php?tz_offset=${tz}`);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { markdown } = await api('GET', `/api/export.php?tz=${encodeURIComponent(tz)}`);
     elPreview.textContent = markdown || '(no notes to export)';
-    document.getElementById('btn-download').href = `/api/export.php?download=1&tz_offset=${tz}`;
+    document.getElementById('btn-download').href = `/api/export.php?download=1&tz=${encodeURIComponent(tz)}`;
     elModal.hidden = false;
 });
 

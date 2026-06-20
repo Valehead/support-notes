@@ -9,18 +9,18 @@ declare(strict_types=1);
  * database dependency. The document title is "QA Session Notes" only when
  * every note in the export is QA mode; otherwise "Support Call Notes".
  * Per-note timestamp labels are mode-aware ("Session Started" vs "Call Started").
- * call_started_at (ISO 8601 UTC) is formatted to local time for readability.
+ * call_started_at (ISO 8601 UTC) is formatted to the client's IANA timezone for readability.
  * call_elapsed_seconds, when present, is rendered as a Duration line.
  */
 class MarkdownExporter
 {
-    public function export(array $notes, int $tzOffsetMinutes = 0): string
+    public function export(array $notes, string $tzName = 'UTC'): string
     {
         if (empty($notes)) {
             return '';
         }
 
-        $tz     = $this->tzFromOffset($tzOffsetMinutes);
+        $tz     = $this->resolveTimezone($tzName);
         $date   = (new DateTimeImmutable('now', $tz))->format('F j, Y');
         $modes  = array_unique(array_column($notes, 'mode'));
         $title  = count($modes) === 1 && $modes[0] === 'qa'
@@ -59,11 +59,13 @@ class MarkdownExporter
         return implode("\n", $lines);
     }
 
-    private function tzFromOffset(int $minutes): \DateTimeZone
+    private function resolveTimezone(string $name): \DateTimeZone
     {
-        $sign = $minutes >= 0 ? '+' : '-';
-        $abs  = abs($minutes);
-        return new \DateTimeZone(sprintf('%s%02d:%02d', $sign, intdiv($abs, 60), $abs % 60));
+        try {
+            return new \DateTimeZone($name);
+        } catch (\Exception) {
+            return new \DateTimeZone('UTC');
+        }
     }
 
     private function fmtTimestamp(string $iso, \DateTimeZone $tz): string
