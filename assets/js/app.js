@@ -95,6 +95,8 @@ elBtnReset.addEventListener('click', resetTimer);
 function startTimer() {
     if (state.isRunning) return;
 
+    enterActiveState();
+
     const now = new Date();
     state.timerStart    = now;
     state.callStartedAt = now;
@@ -158,6 +160,7 @@ elBtnNew.addEventListener('click', async () => {
     elContent.value  = '';
 
     startTimer();
+    enterActiveState();
 
     const note = await api('POST', '/api/notes.php', {
         mode:            state.mode,
@@ -186,6 +189,7 @@ elContent.addEventListener('input', () => {
 
 [elLocation, elContact].forEach(el => {
     el.addEventListener('input', () => {
+        enterActiveState();
         clearTimeout(state.saveHandle);
         syncSaveButton();
         state.saveHandle = setTimeout(saveNow, 800);
@@ -257,6 +261,20 @@ function setSaveEnabled(enabled) {
     elBtnSave.disabled = !enabled;
 }
 
+function enterRestingState() {
+    const ws = document.querySelector('.workspace');
+    ws.classList.remove('workspace--active');
+    ws.classList.add('workspace--resting');
+    state.activeId = null;
+    setSaveEnabled(false);
+}
+
+function enterActiveState() {
+    const ws = document.querySelector('.workspace');
+    ws.classList.remove('workspace--resting');
+    ws.classList.add('workspace--active');
+}
+
 // ── Sidebar ────────────────────────────────────────────────────────────────
 // Populated two ways:
 //   1. PHP renders existing notes on page load (index.php).
@@ -265,7 +283,7 @@ function setSaveEnabled(enabled) {
 // The New Note handler sets state.activeId directly and skips loadNote()
 // because the editor fields start empty for a brand-new note.
 
-elNoteList.addEventListener('click', e => {
+elNoteList.addEventListener('click', async e => {
     const deleteBtn = e.target.closest('.note-delete');
     if (deleteBtn) {
         e.stopPropagation();
@@ -274,7 +292,24 @@ elNoteList.addEventListener('click', e => {
     }
 
     const item = e.target.closest('.note-item');
-    if (item) loadNoteById(parseInt(item.dataset.id, 10));
+    if (!item) return;
+
+    const id = parseInt(item.dataset.id, 10);
+
+    if (id === state.activeId) {
+        // Toggle off: save current note and return to resting state
+        clearTimeout(state.saveHandle);
+        await saveNow();
+        enterRestingState();
+        elLocation.value = '';
+        elContact.value  = '';
+        elContent.value  = '';
+        resetTimer();
+        setActive(null);
+        return;
+    }
+
+    loadNoteById(id);
 });
 
 async function loadNoteById(id) {
@@ -294,6 +329,7 @@ function loadNote(note) {
     elContact.value  = note.contact_name    ?? '';
     elContent.value  = note.content         ?? '';
 
+    enterActiveState();
     setSaveEnabled(true);
 
     // Timer display is session state — loading a note does not touch it
@@ -359,11 +395,10 @@ async function deleteNote(id) {
     document.querySelector(`.note-item[data-id="${id}"]`)?.remove();
 
     if (state.activeId === id) {
-        state.activeId   = null;
+        enterRestingState();
         elLocation.value = '';
         elContact.value  = '';
         elContent.value  = '';
-        setSaveEnabled(false);
     }
 }
 
@@ -402,7 +437,7 @@ function esc(str) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
-setSaveEnabled(false);
+enterRestingState();
 
 // Format the created_at timestamps on PHP-rendered sidebar items using the
 // same client-side formatter so timezone conversion is consistent everywhere.

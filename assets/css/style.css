@@ -278,6 +278,51 @@ body {
     flex-direction: column;
     overflow: hidden;
     background: #242424;
+    position: relative;
+}
+
+/* ── Resting / active workspace states ── */
+
+.editor-idle {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #242424;
+    transition: opacity 0.2s ease;
+    z-index: 1;
+}
+
+.editor-idle-title {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--border-heavy);
+}
+
+.editor-idle-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.6;
+}
+
+.editor-idle-hint strong {
+    color: var(--orange);
+}
+
+.workspace--active .editor-idle {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.workspace--resting .editor-idle {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 #note-content {
