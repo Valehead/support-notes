@@ -101,17 +101,17 @@ elBtnReset.addEventListener('click', () => {
     resetTimer();
 });
 
-function startTimer() {
+function startTimer(existingStart = null) {
     if (state.isRunning) return;
 
     enterActiveState();
 
-    const now = new Date();
-    state.timerStart    = now;
-    state.callStartedAt = now;
+    const start = existingStart ?? new Date();
+    state.timerStart    = start;
+    state.callStartedAt = start;
     state.isRunning     = true;
 
-    elCallStarted.textContent = fmtTime(now);
+    elCallStarted.textContent = fmtTime(start);
     elBtnStartStop.textContent = 'Stop';
     elBtnStartStop.classList.remove('btn-primary');
     elBtnStartStop.classList.add('btn-running');
@@ -178,7 +178,7 @@ elBtnNew.addEventListener('click', async () => {
             client_location: '',
             contact_name:    null,
             content:         '',
-            call_started_at: fmtTime(state.callStartedAt),
+            call_started_at: state.callStartedAt.toISOString(),
         });
 
         state.activeId = note.id;
@@ -216,7 +216,7 @@ elContent.addEventListener('input', () => {
 async function saveNow() {
     const location = elLocation.value.trim();
     const content  = elContent.value.trim();
-    const callTime = state.callStartedAt ? fmtTime(state.callStartedAt) : null;
+    const callTime = state.callStartedAt ? state.callStartedAt.toISOString() : null;
 
     if (state.activeId === null) {
         // No note record yet — create one on first save rather than dropping the data.
@@ -338,6 +338,16 @@ async function loadNoteById(id) {
 }
 
 function loadNote(note) {
+    stopTimer();
+    state.isRunning     = false;
+    state.timerStart    = null;
+    state.callStartedAt = null;
+    elElapsed.textContent      = '—';
+    elCallStarted.textContent  = '—';
+    elBtnStartStop.textContent = 'Start';
+    elBtnStartStop.classList.add('btn-primary');
+    elBtnStartStop.classList.remove('btn-running');
+
     state.activeId = note.id;
     state.mode     = note.mode;
 
@@ -351,7 +361,12 @@ function loadNote(note) {
     enterActiveState();
     setSaveEnabled(true);
 
-    // Timer display is session state — loading a note does not touch it
+    if (note.call_started_at) {
+        const restored = new Date(note.call_started_at);
+        if (!isNaN(restored.getTime())) {
+            startTimer(restored);
+        }
+    }
 }
 
 function setActive(id) {
@@ -370,7 +385,7 @@ function buildSidebarItem(note) {
     li.dataset.id = note.id;
 
     const callHtml = note.call_started_at
-        ? `<span class="note-item-call">Call: ${esc(note.call_started_at)}</span>`
+        ? `<span class="note-item-call">Call: ${esc(fmtTime(new Date(note.call_started_at)))}</span>`
         : '';
 
     li.innerHTML = `
@@ -394,7 +409,7 @@ function updateSidebarItem(id, title, callTime) {
             callEl.className = 'note-item-call';
             item.querySelector('.note-delete').before(callEl);
         }
-        callEl.textContent = 'Call: ' + callTime;
+        callEl.textContent = 'Call: ' + fmtTime(new Date(callTime));
     }
 }
 
