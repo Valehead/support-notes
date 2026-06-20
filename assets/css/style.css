@@ -72,7 +72,7 @@ body {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--green) 0%, var(--orange) 100%);
+    background: linear-gradient(90deg, var(--orange) 0%, var(--green) 100%);
 }
 
 .app-title {
@@ -293,7 +293,7 @@ body {
     gap: 14px;
     background: #242424;
     transition: opacity 0.2s ease;
-    z-index: 1;
+    z-index: 2;
 }
 
 .editor-idle-title {
@@ -315,6 +315,12 @@ body {
     color: var(--orange);
 }
 
+.editor-idle-logo {
+    width: 96px;
+    opacity: 0.6;
+    margin-bottom: 4px;
+}
+
 .workspace--active .editor-idle {
     opacity: 0;
     pointer-events: none;
@@ -323,6 +329,17 @@ body {
 .workspace--resting .editor-idle {
     opacity: 1;
     pointer-events: auto;
+}
+
+.panel-center::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('/assets/img/mmp-grey.png') no-repeat center center;
+    background-size: 220px;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
 }
 
 #note-content {
@@ -336,6 +353,8 @@ body {
     padding: 22px 26px;
     border: none;
     outline: none;
+    position: relative;
+    z-index: 1;
 }
 
 #note-content::placeholder {

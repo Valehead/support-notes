@@ -19,16 +19,22 @@ function getDb(): PDO
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS notes (
-            id               INTEGER PRIMARY KEY AUTOINCREMENT,
-            mode             TEXT    NOT NULL DEFAULT 'support',
-            client_location  TEXT    NOT NULL DEFAULT '',
-            contact_name     TEXT,
-            content          TEXT    NOT NULL DEFAULT '',
-            call_started_at  TEXT,
-            created_at       TEXT    NOT NULL,
-            updated_at       TEXT    NOT NULL
+            id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+            mode                 TEXT    NOT NULL DEFAULT 'support',
+            client_location      TEXT    NOT NULL DEFAULT '',
+            contact_name         TEXT,
+            content              TEXT    NOT NULL DEFAULT '',
+            call_started_at      TEXT,
+            call_elapsed_seconds INTEGER,
+            created_at           TEXT    NOT NULL,
+            updated_at           TEXT    NOT NULL
         )
     ");
+
+    $columns = $pdo->query('PRAGMA table_info(notes)')->fetchAll();
+    if (!in_array('call_elapsed_seconds', array_column($columns, 'name'))) {
+        $pdo->exec('ALTER TABLE notes ADD COLUMN call_elapsed_seconds INTEGER');
+    }
 
     return $pdo;
 }

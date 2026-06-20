@@ -72,9 +72,12 @@ function parseNoteBody(array $raw): array
                                  ? trim((string) $raw['contact_name'])
                                  : null,
         'content'         => isset($raw['content']) ? (string) $raw['content'] : '',
-        'call_started_at' => isset($raw['call_started_at']) && $raw['call_started_at'] !== null
-                                 ? trim((string) $raw['call_started_at'])
-                                 : null,
+        'call_started_at'      => isset($raw['call_started_at']) && $raw['call_started_at'] !== null
+                                     ? trim((string) $raw['call_started_at'])
+                                     : null,
+        'call_elapsed_seconds' => isset($raw['call_elapsed_seconds']) && $raw['call_elapsed_seconds'] !== null
+                                     ? (int) $raw['call_elapsed_seconds']
+                                     : null,
     ];
 }
 

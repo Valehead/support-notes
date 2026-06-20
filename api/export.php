@@ -15,7 +15,8 @@ if (!empty($_GET['ids'])) {
 }
 
 $notes    = empty($ids) ? $repo->findAll() : $repo->findByIds(array_values($ids));
-$markdown = $exporter->export($notes);
+$tzOffset = isset($_GET['tz_offset']) ? max(-720, min(840, (int) $_GET['tz_offset'])) : 0;
+$markdown = $exporter->export($notes, $tzOffset);
 
 if (isset($_GET['download'])) {
     $filename = 'notes-' . date('Y-m-d') . '.md';
