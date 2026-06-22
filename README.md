@@ -1,24 +1,24 @@
 # support-notes
 
-A note-taking dashboard for support specialists and QA testers. Built to stand alongside a CRM, ticket system, or issue tracker as its own workspace — capture structured notes in real time during a call or testing session, then hand off however you like.
+A note-taking dashboard for support specialists and QA testers. Built to stand alongside a CRM, ticket system, or issue tracker as its own workspace. You can capture structured notes in real time during a call or testing session, then hand off however you like.
 
 ## The problem it solves
 
-Support and QA teams often rely on memory or scratch paper during calls and testing sessions, then reconstruct notes hours later and lose detail in the process. This app gives you a persistent, structured workspace that runs alongside whatever else is on your screen. Start the timer when the call begins, type freely, switch between notes without losing your place. Export to markdown when you're done — or don't. The value is in the session, not the handoff.
+Support and QA teams often rely on memory or scratch paper during calls and testing sessions, then reconstruct notes hours later and lose detail in the process. This app gives you a persistent, structured workspace that runs alongside whatever else is on your screen. Start the timer when the call begins, type freely, switch between notes without losing your place. You can even export to markdown when you're done if you'd like. The value is in the session, not the handoff.
 
 ## Features
 
 - **Dual mode:** Support Call and QA Testing, each with context-appropriate field labels and placeholder text
 - **Call timer:** Start, stop, and reset independently from note creation. Timer state (running or paused at N seconds) is saved per note and restored when you switch back
 - **Per-note sidebar:** Switch between multiple notes without losing your place; the active note's timer auto-resumes on return
-- **Resting state:** Idle overlay on load — the workspace stays clean until you start a note
+- **Resting state:** Idle overlay on load. The workspace stays clean until you start a note
 - **Auto-save:** Notes save automatically as you type (debounced at 1.5 s for content, 800 ms for fields), with a manual Save button in the header
 - **Delete confirmation:** Single-click × on a note prompts before deleting
 - **Export:** Preview all notes as formatted markdown in-page, with human-readable timestamps and call duration; download as a `.md` file
 
 ## Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — recommended, no other setup needed
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) : recommended, no other setup needed
 
 **Without Docker:** PHP 8.2+ with the `pdo_sqlite` extension enabled. The SQLite database file is created automatically; no database server is needed.
 
@@ -39,7 +39,7 @@ Open [http://localhost:8080](http://localhost:8080). To stop: `docker compose do
 ```bash
 git clone <repo-url>
 cd support-notes
-cp .env.example .env          # optional — sets DB_PATH if you want a custom location
+cp .env.example .env          # optional - sets DB_PATH if you want a custom location
 php -S localhost:8080
 ```
 
